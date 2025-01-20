@@ -26,16 +26,20 @@ router.get<Request, DefaultMessage<ICompetition[]>>('/', (req, res) => {
   });
 });
 
-interface ICompetitionSingle extends Request {
-  competitionId: string;
-  seasonId: string;
-}
-router.get<ICompetitionSingle, DefaultMessage<ICompetition>>(
-  '/:competitionId/:seasonId',
-  (req, res) => {
+router.get<Request<{ competitionId: string; seasonId: string }, DefaultMessage<ICompetition>>>(
+  '/competition/:competitionId/:seasonId',
+  (req: Request<{ competitionId: string; seasonId: string }>, res: Response<DefaultMessage<ICompetition>>) => {
     const { competitionId, seasonId } = req.params;
 
-    const filePath = './src/data/competitions.json';
+    if (!competitionId || !seasonId) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'competitionId and seasonId are required parameters.',
+        data: null
+      });
+    }
+
+    const filePath = `./src/data/competitions/${competitionId}/${seasonId}.json`;
 
     fs.readFile(filePath, 'utf8', (err, data) => {
       if (err) {
@@ -43,43 +47,19 @@ router.get<ICompetitionSingle, DefaultMessage<ICompetition>>(
         return res.status(500).json({
           status: 'error',
           message: 'Could not read competition data file.',
-          data: null,
+          data: null
         });
       }
 
-      try {
-        const competitions: ICompetition[] = JSON.parse(data);
+      const competitionData: ICompetition = JSON.parse(data);
 
-        const filteredCompetitions = competitions.filter(
-          (comp) =>
-            comp.competition_id.toString() === competitionId &&
-            comp.season_id.toString() === seasonId,
-        );
-
-        if (filteredCompetitions.length === 0) {
-          return res.status(404).json({
-            status: 'error',
-            message:
-              'No competition found for the provided competitionId and seasonId.',
-            data: null,
-          });
-        }
-
-        return res.json({
-          status: 'success',
-          message: 'Successfully fetched competition data.',
-          data: filteredCompetitions[0],
-        });
-      } catch (parseError) {
-        console.error('Error parsing JSON data:', parseError);
-        return res.status(500).json({
-          status: 'error',
-          message: 'Invalid JSON format in the data file.',
-          data: null,
-        });
-      }
+      return res.json({
+        status: 'success',
+        message: 'Successfully fetched competition data.',
+        data: competitionData
+      });
     });
-  },
+  }
 );
 
 // Search function
@@ -287,77 +267,6 @@ router.get<Request, DefaultMessage<MatchInfo[]>>('/matches', (req, res) => {
     });
   });
 });
-interface IMatchSingle extends Request {
-  competitionId: string;
-  seasonId: string;
-  matchId: string;
-}
-router.get<IMatchSingle, DefaultMessage<MatchInfo>>(
-  '/matches/:competitionId/:seasonId/:matchId',
-  (req, res) => {
-    const { competitionId, seasonId, matchId } = req.params;
-
-    if (!competitionId || !seasonId || !matchId) {
-      return res.status(400).json({
-        status: 'error',
-        message:
-          'competitionId, seasonId, and matchId are required parameters.',
-        data: null,
-      });
-    }
-
-    const filePath = `./src/data/matches/${competitionId}/${seasonId}.json`;
-
-    fs.readFile(filePath, 'utf8', (err, data) => {
-      if (err) {
-        console.error('Error reading file:', err);
-        return res.status(500).json({
-          status: 'error',
-          message: 'Could not read matches data file.',
-          data: null,
-        });
-      }
-
-      try {
-        const matches: any = JSON.parse(data);
-
-        const match = matches.find(
-          (m: any) => m.match_id.toString() === matchId,
-        );
-
-        if (!match) {
-          return res.status(404).json({
-            status: 'error',
-            message: 'No match found with the provided matchId.',
-            data: null,
-          });
-        }
-
-        const formattedMatch = {
-          matchId: match.match_id,
-          homeTeam: match.home_team.home_team_name,
-          awayTeam: match.away_team.away_team_name,
-          homeScore: match.home_score,
-          awayScore: match.away_score,
-          date: match.match_date,
-        };
-
-        return res.json({
-          status: 'success',
-          message: 'Successfully fetched match data.',
-          data: formattedMatch,
-        });
-      } catch (parseError) {
-        console.error('Error parsing JSON data:', parseError);
-        return res.status(500).json({
-          status: 'error',
-          message: 'Invalid JSON format in the data file.',
-          data: null,
-        });
-      }
-    });
-  },
-);
 
 interface PlayerInfo {
   playerId: number;

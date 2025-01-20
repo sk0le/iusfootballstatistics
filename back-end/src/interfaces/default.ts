@@ -1,5 +1,5 @@
 export interface DefaultMessage<T> {
   status: string;
   message: string;
-  data: T;
+  data: T | null;
 }
