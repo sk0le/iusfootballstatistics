@@ -22,12 +22,13 @@ const Index = () => {
   const { data: competitions, isLoading } = useQuery({
     queryKey: ["competitions", searchQuery],
     queryFn: async () => {
+      console.log(API_BASE_URL);
       const endpoint = searchQuery
         ? `${API_BASE_URL}/statistics/competitions/search?q=${encodeURIComponent(searchQuery)}`
         : `${API_BASE_URL}/statistics/competitions`;
       const response = await fetch(endpoint);
       if (!response.ok) {
-        throw new Error('Network response was not ok');
+        throw new Error("Network response was not ok");
       }
       const data = await response.json();
       return data.data;
@@ -112,7 +113,7 @@ const Index = () => {
                         {page}
                       </PaginationLink>
                     </PaginationItem>
-                  )
+                  ),
                 )}
 
                 <PaginationItem>
